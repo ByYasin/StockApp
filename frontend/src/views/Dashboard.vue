@@ -25,7 +25,7 @@
             </button>
 
             <button
-              @click="$router.push('/db-selector')"
+              @click="changeDatabase"
               class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center space-x-2"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,14 +226,16 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useDatabaseStore } from '@/stores/database'
 import { useProductStore } from '@/stores/products'
 import { useCategoryStore } from '@/stores/categories'
 import { useMovementStore } from '@/stores/movements'
 import { useThemeStore } from '@/stores/theme'
+import { ResetAndReload } from '../../wailsjs/go/app/App'
 
 const route = useRoute()
+const router = useRouter()
 const dbStore = useDatabaseStore()
 const productStore = useProductStore()
 const categoryStore = useCategoryStore()
@@ -280,6 +282,11 @@ const formatDate = (dateStr) => {
 const getProductName = (productId) => {
   const product = productStore.products.find(p => p.id === productId)
   return product ? product.name : 'Bilinmeyen Ürün'
+}
+
+const changeDatabase = async () => {
+  // Config'den last database'i temizle, DB bağlantısını kes ve uygulamayı yeniden yükle
+  await ResetAndReload()
 }
 
 onMounted(async () => {

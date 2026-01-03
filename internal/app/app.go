@@ -8,6 +8,8 @@ import (
 	"stoktakip/internal/database"
 	"stoktakip/internal/services"
 	"stoktakip/internal/utils"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App struct
@@ -249,4 +251,22 @@ func (a *App) GetTheme() string {
 // SetTheme sets the theme
 func (a *App) SetTheme(theme string) error {
 	return a.configManager.SetTheme(theme)
+}
+
+// ResetAndReload clears the last database and reloads the window
+func (a *App) ResetAndReload() error {
+	// Clear last database from config
+	if err := a.configManager.ClearLastDatabase(); err != nil {
+		return err
+	}
+
+	// Close current database connection
+	if err := a.dbManager.Close(); err != nil {
+		log.Printf("Error closing database: %v", err)
+	}
+
+	// Reload the window
+	runtime.WindowReloadApp(a.ctx)
+
+	return nil
 }

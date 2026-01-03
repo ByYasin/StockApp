@@ -115,6 +115,15 @@ func (m *Manager) GetTheme() string {
 	return m.config.Theme
 }
 
+// ClearLastDatabase clears the last database setting
+func (m *Manager) ClearLastDatabase() error {
+	if m.config == nil {
+		m.config = m.getDefaultConfig()
+	}
+	m.config.LastDatabase = ""
+	return m.Save()
+}
+
 // getDefaultConfig returns the default configuration
 func (m *Manager) getDefaultConfig() *Config {
 	return &Config{

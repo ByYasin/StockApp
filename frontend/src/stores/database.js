@@ -92,6 +92,13 @@ export const useDatabaseStore = defineStore('database', () => {
     error.value = null
   }
 
+  function disconnect() {
+    // Veritabanı bağlantısını kes
+    currentDatabase.value = null
+    isConnected.value = false
+    error.value = null
+  }
+
   return {
     // State
     databases,
@@ -106,6 +113,7 @@ export const useDatabaseStore = defineStore('database', () => {
     selectDatabase,
     createDatabase,
     backupDatabase,
-    clearError
+    clearError,
+    disconnect
   }
 })
