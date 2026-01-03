@@ -37,7 +37,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Toplam Ürün</p>
-                <p class="text-3xl font-bold text-gray-800">0</p>
+                <p class="text-3xl font-bold text-gray-800">{{ totalProducts }}</p>
               </div>
               <div class="p-3 bg-blue-100 rounded-full">
                 <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Kritik Stok</p>
-                <p class="text-3xl font-bold text-red-600">0</p>
+                <p class="text-3xl font-bold text-red-600">{{ lowStockCount }}</p>
               </div>
               <div class="p-3 bg-red-100 rounded-full">
                 <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,7 +65,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Kategoriler</p>
-                <p class="text-3xl font-bold text-gray-800">0</p>
+                <p class="text-3xl font-bold text-gray-800">{{ totalCategories }}</p>
               </div>
               <div class="p-3 bg-green-100 rounded-full">
                 <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +79,7 @@
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Bugünkü Hareketler</p>
-                <p class="text-3xl font-bold text-gray-800">0</p>
+                <p class="text-3xl font-bold text-gray-800">{{ todayMovements }}</p>
               </div>
               <div class="p-3 bg-purple-100 rounded-full">
                 <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,11 +151,52 @@
           </div>
         </div>
 
-        <!-- Recent Activities Placeholder -->
+        <!-- Recent Activities -->
         <div class="card">
           <h3 class="text-lg font-semibold mb-4 text-gray-800">Son Hareketler</h3>
-          <div class="text-center py-8 text-gray-500">
+          
+          <div v-if="recentMovements.length === 0" class="text-center py-8 text-gray-500">
             <p>Henüz hareket kaydı yok</p>
+          </div>
+          
+          <div v-else class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tarih</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ürün</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tip</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Miktar</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Not</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr v-for="movement in recentMovements" :key="movement.id" class="hover:bg-gray-50">
+                  <td class="px-4 py-3 text-sm text-gray-600">
+                    {{ formatDate(movement.created_at) }}
+                  </td>
+                  <td class="px-4 py-3 text-sm font-medium text-gray-800">
+                    {{ getProductName(movement.product_id) }}
+                  </td>
+                  <td class="px-4 py-3">
+                    <span
+                      class="px-2 py-1 text-xs font-medium rounded-full"
+                      :class="movement.type === 'IN'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'"
+                    >
+                      {{ movement.type === 'IN' ? 'Giriş' : 'Çıkış' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-600">
+                    {{ movement.quantity }}
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-500">
+                    {{ movement.note || '-' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -164,12 +205,18 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDatabaseStore } from '@/stores/database'
+import { useProductStore } from '@/stores/products'
+import { useCategoryStore } from '@/stores/categories'
+import { useMovementStore } from '@/stores/movements'
 
 const route = useRoute()
 const dbStore = useDatabaseStore()
+const productStore = useProductStore()
+const categoryStore = useCategoryStore()
+const movementStore = useMovementStore()
 
 const currentRoute = computed(() => route.name)
 
@@ -179,4 +226,52 @@ const navItems = [
   { label: 'Kategoriler', route: 'Categories' },
   { label: 'Hareketler', route: 'Movements' }
 ]
+
+// Stats
+const totalProducts = computed(() => productStore.products.length)
+const lowStockCount = computed(() => productStore.lowStockProducts.length)
+const totalCategories = computed(() => categoryStore.categories.length)
+const todayMovements = computed(() => {
+  const today = new Date().toDateString()
+  return movementStore.movements.filter(m => {
+    const movementDate = new Date(m.created_at).toDateString()
+    return movementDate === today
+  }).length
+})
+
+// Recent movements (last 10)
+const recentMovements = computed(() => {
+  return [...movementStore.movements]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 10)
+})
+
+// Helper functions
+const formatDate = (dateStr) => {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('tr-TR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const getProductName = (productId) => {
+  const product = productStore.products.find(p => p.id === productId)
+  return product ? product.name : 'Bilinmeyen Ürün'
+}
+
+onMounted(async () => {
+  try {
+    await Promise.all([
+      productStore.loadProducts(),
+      categoryStore.loadCategories(),
+      movementStore.loadMovements()
+    ])
+  } catch (err) {
+    console.error('Failed to load dashboard data:', err)
+  }
+})
 </script>

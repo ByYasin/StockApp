@@ -13,6 +13,7 @@ type Product struct {
 	Unit          string    `gorm:"size:20;not null" json:"unit"` // adet, kg, litre, etc.
 	CriticalLimit int       `gorm:"default:0" json:"critical_limit"`
 	Price         float64   `gorm:"type:decimal(10,2);default:0" json:"price"`
+	CurrentStock  int       `gorm:"default:0" json:"current_stock"` // Computed from movements
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 

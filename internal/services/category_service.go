@@ -4,7 +4,18 @@ import (
 	"fmt"
 	"stoktakip/internal/database"
 	"stoktakip/internal/models"
+	"time"
 )
+
+// CategoryDTO is the data transfer object for categories
+type CategoryDTO struct {
+	ID          uint      `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Color       string    `json:"color"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
 
 // CategoryService handles category-related operations
 type CategoryService struct {
@@ -158,4 +169,92 @@ func (s *CategoryService) GetCategoryCount() (int64, error) {
 	}
 
 	return count, nil
+}
+
+// Helper function to convert model to DTO
+func (s *CategoryService) toDTO(category *models.Category) CategoryDTO {
+	return CategoryDTO{
+		ID:          category.ID,
+		Name:        category.Name,
+		Description: category.Description,
+		Color:       category.Color,
+		CreatedAt:   category.CreatedAt,
+		UpdatedAt:   category.UpdatedAt,
+	}
+}
+
+// GetAll returns all categories as DTOs
+func (s *CategoryService) GetAll() ([]CategoryDTO, error) {
+	categories, err := s.GetAllCategories()
+	if err != nil {
+		return nil, err
+	}
+
+	dtos := make([]CategoryDTO, len(categories))
+	for i, cat := range categories {
+		dtos[i] = s.toDTO(&cat)
+	}
+
+	return dtos, nil
+}
+
+// GetByID returns a category by ID as DTO
+func (s *CategoryService) GetByID(id uint) (*CategoryDTO, error) {
+	category, err := s.GetCategoryByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	dto := s.toDTO(category)
+	return &dto, nil
+}
+
+// Create creates a new category from DTO
+func (s *CategoryService) Create(dto CategoryDTO) (*CategoryDTO, error) {
+	category, err := s.CreateCategory(dto.Name, dto.Color)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update description if provided
+	if dto.Description != "" {
+		db := s.dbManager.GetDB()
+		category.Description = dto.Description
+		if err := db.Save(category).Error; err != nil {
+			return nil, fmt.Errorf("failed to update description: %w", err)
+		}
+	}
+
+	resultDTO := s.toDTO(category)
+	return &resultDTO, nil
+}
+
+// Update updates a category from DTO
+func (s *CategoryService) Update(id uint, dto CategoryDTO) (*CategoryDTO, error) {
+	db := s.dbManager.GetDB()
+	if db == nil {
+		return nil, fmt.Errorf("no database connection")
+	}
+
+	var category models.Category
+	if err := db.First(&category, id).Error; err != nil {
+		return nil, fmt.Errorf("category not found: %w", err)
+	}
+
+	// Update fields
+	category.Name = dto.Name
+	category.Description = dto.Description
+	category.Color = dto.Color
+
+	if err := db.Save(&category).Error; err != nil {
+		return nil, fmt.Errorf("failed to update category: %w", err)
+	}
+
+	resultDTO := s.toDTO(&category)
+	return &resultDTO, nil
+}
+
+// Delete deletes a category by ID
+func (s *CategoryService) Delete(id uint) error {
+	return s.DeleteCategory(id)
 }

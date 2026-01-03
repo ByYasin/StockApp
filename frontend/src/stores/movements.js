@@ -1,158 +1,93 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
 import { 
   GetAllMovements, 
-  GetMovementsByProduct, 
-  GetMovementsByType, 
-  CreateMovement
-} from '@wails/services/MovementService'
+  CreateMovement, 
+  DeleteMovement,
+  GetMovementsByProduct,
+  GetMovementStats
+} from '../../wailsjs/go/app/App'
 
-export const useMovementStore = defineStore('movements', () => {
-  const movements = ref([])
-  const isLoading = ref(false)
-  const error = ref(null)
-  const filterType = ref(null) // 'in', 'out', or null for all
-  const filterProductId = ref(null)
+export const useMovementStore = defineStore('movements', {
+  state: () => ({
+    movements: [],
+    stats: null,
+    loading: false,
+    error: null
+  }),
 
-  // Computed
-  const filteredMovements = computed(() => {
-    let result = movements.value
+  actions: {
+    async loadMovements() {
+      this.loading = true
+      this.error = null
+      try {
+        this.movements = await GetAllMovements()
+      } catch (err) {
+        this.error = err.message || 'Failed to load movements'
+        console.error('Error loading movements:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
 
-    if (filterType.value) {
-      result = result.filter(m => m.type === filterType.value)
+    async createMovement(movementData) {
+      this.loading = true
+      this.error = null
+      try {
+        const newMovement = await CreateMovement(movementData)
+        this.movements.push(newMovement)
+        return newMovement
+      } catch (err) {
+        this.error = err.message || 'Failed to create movement'
+        console.error('Error creating movement:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async deleteMovement(id) {
+      this.loading = true
+      this.error = null
+      try {
+        await DeleteMovement(id)
+        this.movements = this.movements.filter(m => m.id !== id)
+      } catch (err) {
+        this.error = err.message || 'Failed to delete movement'
+        console.error('Error deleting movement:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async loadMovementsByProduct(productId) {
+      this.loading = true
+      this.error = null
+      try {
+        return await GetMovementsByProduct(productId)
+      } catch (err) {
+        this.error = err.message || 'Failed to load product movements'
+        console.error('Error loading product movements:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async loadStats() {
+      this.loading = true
+      this.error = null
+      try {
+        this.stats = await GetMovementStats()
+        return this.stats
+      } catch (err) {
+        this.error = err.message || 'Failed to load movement stats'
+        console.error('Error loading movement stats:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
     }
-
-    if (filterProductId.value) {
-      result = result.filter(m => m.product_id === filterProductId.value)
-    }
-
-    return result
-  })
-
-  const totalIn = computed(() => {
-    return movements.value
-      .filter(m => m.type === 'in')
-      .reduce((sum, m) => sum + m.quantity, 0)
-  })
-
-  const totalOut = computed(() => {
-    return movements.value
-      .filter(m => m.type === 'out')
-      .reduce((sum, m) => sum + m.quantity, 0)
-  })
-
-  const recentMovements = computed(() => {
-    return [...movements.value]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 10)
-  })
-
-  // Actions
-  async function loadMovements() {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const result = await GetAllMovements()
-      movements.value = result || []
-    } catch (err) {
-      error.value = err.message || 'Hareketler yüklenemedi'
-      console.error('Failed to load movements:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function loadMovementsByProduct(productId) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const result = await GetMovementsByProduct(productId)
-      movements.value = result || []
-      filterProductId.value = productId
-    } catch (err) {
-      error.value = err.message || 'Ürün hareketleri yüklenemedi'
-      console.error('Failed to load movements by product:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function loadMovementsByType(type) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const result = await GetMovementsByType(type)
-      movements.value = result || []
-      filterType.value = type
-    } catch (err) {
-      error.value = err.message || 'Hareketler yüklenemedi'
-      console.error('Failed to load movements by type:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function createMovement(movement) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      await CreateMovement(
-        movement.product_id,
-        movement.type, // 'in' or 'out'
-        movement.quantity,
-        movement.notes || ''
-      )
-      await loadMovements()
-    } catch (err) {
-      error.value = err.message || 'Hareket oluşturulamadı'
-      console.error('Failed to create movement:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  function setFilterType(type) {
-    filterType.value = type
-  }
-
-  function setFilterProduct(productId) {
-    filterProductId.value = productId
-  }
-
-  function clearFilters() {
-    filterType.value = null
-    filterProductId.value = null
-  }
-
-  function clearError() {
-    error.value = null
-  }
-
-  return {
-    movements,
-    filteredMovements,
-    totalIn,
-    totalOut,
-    recentMovements,
-    isLoading,
-    error,
-    filterType,
-    filterProductId,
-    loadMovements,
-    loadMovementsByProduct,
-    loadMovementsByType,
-    createMovement,
-    setFilterType,
-    setFilterProduct,
-    clearFilters,
-    clearError
   }
 })

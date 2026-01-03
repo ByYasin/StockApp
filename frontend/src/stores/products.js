@@ -1,216 +1,138 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
 import { 
   GetAllProducts, 
-  GetProductsByCategory, 
-  SearchProducts, 
   CreateProduct, 
   UpdateProduct, 
   DeleteProduct,
   GetLowStockProducts
-} from '@wails/services/ProductService'
+} from '../../wailsjs/go/app/App'
 
-export const useProductStore = defineStore('products', () => {
-  const products = ref([])
-  const isLoading = ref(false)
-  const error = ref(null)
-  const searchQuery = ref('')
-  const selectedCategoryId = ref(null)
+export const useProductStore = defineStore('products', {
+  state: () => ({
+    products: [],
+    loading: false,
+    error: null,
+    searchQuery: '',
+    selectedCategory: '',
+    stockFilter: 'all' // 'all', 'low', 'out'
+  }),
 
-  // Computed
-  const filteredProducts = computed(() => {
-    let result = products.value
+  getters: {
+    filteredProducts: (state) => {
+      let filtered = [...state.products]
 
-    // Category filter
-    if (selectedCategoryId.value) {
-      result = result.filter(p => p.category_id === selectedCategoryId.value)
-    }
+      // Search filter
+      if (state.searchQuery) {
+        const query = state.searchQuery.toLowerCase()
+        filtered = filtered.filter(p => 
+          p.name.toLowerCase().includes(query) || 
+          p.code.toLowerCase().includes(query)
+        )
+      }
 
-    // Search filter
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(query) ||
-        p.code?.toLowerCase().includes(query) ||
-        p.description?.toLowerCase().includes(query)
+      // Category filter
+      if (state.selectedCategory) {
+        filtered = filtered.filter(p => p.category_id === state.selectedCategory)
+      }
+
+      // Stock filter
+      if (state.stockFilter === 'low') {
+        filtered = filtered.filter(p => p.current_stock <= p.critical_limit && p.current_stock > 0)
+      } else if (state.stockFilter === 'out') {
+        filtered = filtered.filter(p => p.current_stock === 0)
+      }
+
+      return filtered
+    },
+
+    lowStockProducts: (state) => {
+      return state.products.filter(p => 
+        p.current_stock <= p.critical_limit && p.current_stock > 0
       )
+    },
+
+    outOfStockProducts: (state) => {
+      return state.products.filter(p => p.current_stock === 0)
     }
+  },
 
-    return result
-  })
+  actions: {
+    async loadProducts() {
+      this.loading = true
+      this.error = null
+      try {
+        this.products = await GetAllProducts()
+      } catch (err) {
+        this.error = err.message || 'Failed to load products'
+        console.error('Error loading products:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
 
-  const lowStockProducts = computed(() => {
-    return products.value.filter(p => p.quantity <= p.minimum_stock)
-  })
+    async createProduct(productData) {
+      this.loading = true
+      this.error = null
+      try {
+        const newProduct = await CreateProduct(productData)
+        this.products.push(newProduct)
+        return newProduct
+      } catch (err) {
+        this.error = err.message || 'Failed to create product'
+        console.error('Error creating product:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
 
-  // Actions
-  async function loadProducts() {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const result = await GetAllProducts()
-      products.value = result || []
-    } catch (err) {
-      error.value = err.message || 'Ürünler yüklenemedi'
-      console.error('Failed to load products:', err)
-      throw err
-    } finally {
-      isLoading.value = false
+    async updateProduct(id, productData) {
+      this.loading = true
+      this.error = null
+      try {
+        const updatedProduct = await UpdateProduct(id, productData)
+        const index = this.products.findIndex(p => p.id === id)
+        if (index !== -1) {
+          this.products[index] = updatedProduct
+        }
+        return updatedProduct
+      } catch (err) {
+        this.error = err.message || 'Failed to update product'
+        console.error('Error updating product:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async deleteProduct(id) {
+      this.loading = true
+      this.error = null
+      try {
+        await DeleteProduct(id)
+        this.products = this.products.filter(p => p.id !== id)
+      } catch (err) {
+        this.error = err.message || 'Failed to delete product'
+        console.error('Error deleting product:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async loadLowStockProducts() {
+      this.loading = true
+      this.error = null
+      try {
+        return await GetLowStockProducts()
+      } catch (err) {
+        this.error = err.message || 'Failed to load low stock products'
+        console.error('Error loading low stock products:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
     }
-  }
-
-  async function loadProductsByCategory(categoryId) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const result = await GetProductsByCategory(categoryId)
-      products.value = result || []
-      selectedCategoryId.value = categoryId
-    } catch (err) {
-      error.value = err.message || 'Ürünler yüklenemedi'
-      console.error('Failed to load products by category:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function searchProductsAction(query) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const result = await SearchProducts(query)
-      products.value = result || []
-      searchQuery.value = query
-    } catch (err) {
-      error.value = err.message || 'Arama başarısız'
-      console.error('Failed to search products:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function createProduct(product) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      await CreateProduct(
-        product.code || '',
-        product.name,
-        product.description || '',
-        product.category_id,
-        product.quantity,
-        product.unit,
-        product.minimum_stock,
-        product.unit_price
-      )
-      await loadProducts()
-    } catch (err) {
-      error.value = err.message || 'Ürün oluşturulamadı'
-      console.error('Failed to create product:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function updateProduct(id, product) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      await UpdateProduct(
-        id,
-        product.code || '',
-        product.name,
-        product.description || '',
-        product.category_id,
-        product.unit,
-        product.minimum_stock,
-        product.unit_price
-      )
-      await loadProducts()
-    } catch (err) {
-      error.value = err.message || 'Ürün güncellenemedi'
-      console.error('Failed to update product:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function deleteProduct(id) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      await DeleteProduct(id)
-      await loadProducts()
-    } catch (err) {
-      error.value = err.message || 'Ürün silinemedi'
-      console.error('Failed to delete product:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function loadLowStockProducts() {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const result = await GetLowStockProducts()
-      products.value = result || []
-    } catch (err) {
-      error.value = err.message || 'Düşük stok ürünleri yüklenemedi'
-      console.error('Failed to load low stock products:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  function setSearchQuery(query) {
-    searchQuery.value = query
-  }
-
-  function setSelectedCategory(categoryId) {
-    selectedCategoryId.value = categoryId
-  }
-
-  function clearFilters() {
-    searchQuery.value = ''
-    selectedCategoryId.value = null
-  }
-
-  function clearError() {
-    error.value = null
-  }
-
-  return {
-    products,
-    filteredProducts,
-    lowStockProducts,
-    isLoading,
-    error,
-    searchQuery,
-    selectedCategoryId,
-    loadProducts,
-    loadProductsByCategory,
-    searchProductsAction,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    loadLowStockProducts,
-    setSearchQuery,
-    setSelectedCategory,
-    clearFilters,
-    clearError
   }
 })

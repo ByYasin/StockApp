@@ -143,3 +143,94 @@ func (a *App) GetCurrentDatabase() (*services.DatabaseInfo, error) {
 func (a *App) IsConnected() bool {
 	return a.databaseService.IsConnected()
 }
+
+// Category service methods - exported for Wails
+
+// GetAllCategories returns all categories
+func (a *App) GetAllCategories() ([]services.CategoryDTO, error) {
+	return a.categoryService.GetAll()
+}
+
+// GetCategoryByID returns a category by ID
+func (a *App) GetCategoryByID(id uint) (*services.CategoryDTO, error) {
+	return a.categoryService.GetByID(id)
+}
+
+// CreateCategory creates a new category
+func (a *App) CreateCategory(dto services.CategoryDTO) (*services.CategoryDTO, error) {
+	return a.categoryService.Create(dto)
+}
+
+// UpdateCategory updates an existing category
+func (a *App) UpdateCategory(id uint, dto services.CategoryDTO) (*services.CategoryDTO, error) {
+	return a.categoryService.Update(id, dto)
+}
+
+// DeleteCategory deletes a category
+func (a *App) DeleteCategory(id uint) error {
+	return a.categoryService.Delete(id)
+}
+
+// Product service methods - exported for Wails
+
+// GetAllProducts returns all products
+func (a *App) GetAllProducts() ([]services.ProductDTO, error) {
+	return a.productService.GetAll()
+}
+
+// GetProductByID returns a product by ID
+func (a *App) GetProductByID(id uint) (*services.ProductDTO, error) {
+	return a.productService.GetByID(id)
+}
+
+// CreateProduct creates a new product
+func (a *App) CreateProduct(dto services.ProductDTO) (*services.ProductDTO, error) {
+	return a.productService.Create(dto)
+}
+
+// UpdateProduct updates an existing product
+func (a *App) UpdateProduct(id uint, dto services.ProductDTO) (*services.ProductDTO, error) {
+	return a.productService.Update(id, dto)
+}
+
+// DeleteProduct deletes a product
+func (a *App) DeleteProduct(id uint) error {
+	return a.productService.Delete(id)
+}
+
+// GetLowStockProducts returns products with low stock
+func (a *App) GetLowStockProducts() ([]services.ProductDTO, error) {
+	return a.productService.GetLowStock()
+}
+
+// Movement service methods - exported for Wails
+
+// GetAllMovements returns all movements
+func (a *App) GetAllMovements() ([]services.MovementDTO, error) {
+	return a.movementService.GetAll()
+}
+
+// GetMovementByID returns a movement by ID
+func (a *App) GetMovementByID(id uint) (*services.MovementDTO, error) {
+	return a.movementService.GetByID(id)
+}
+
+// CreateMovement creates a new movement
+func (a *App) CreateMovement(dto services.MovementDTO) (*services.MovementDTO, error) {
+	return a.movementService.Create(dto)
+}
+
+// DeleteMovement deletes a movement
+func (a *App) DeleteMovement(id uint) error {
+	return a.movementService.Delete(id)
+}
+
+// GetMovementsByProduct returns movements for a specific product
+func (a *App) GetMovementsByProduct(productID uint) ([]services.MovementDTO, error) {
+	return a.movementService.GetByProduct(productID)
+}
+
+// GetMovementStats returns movement statistics
+func (a *App) GetMovementStats() (*services.MovementStats, error) {
+	return a.movementService.GetStats()
+}

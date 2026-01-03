@@ -1,88 +1,81 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { GetAllCategories, CreateCategory, UpdateCategory, DeleteCategory } from '@wails/services/CategoryService'
+import { 
+  GetAllCategories, 
+  CreateCategory, 
+  UpdateCategory, 
+  DeleteCategory 
+} from '../../wailsjs/go/app/App'
 
-export const useCategoryStore = defineStore('categories', () => {
-  const categories = ref([])
-  const isLoading = ref(false)
-  const error = ref(null)
+export const useCategoryStore = defineStore('categories', {
+  state: () => ({
+    categories: [],
+    loading: false,
+    error: null
+  }),
 
-  async function loadCategories() {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      const result = await GetAllCategories()
-      categories.value = result || []
-    } catch (err) {
-      error.value = err.message || 'Kategoriler yüklenemedi'
-      console.error('Failed to load categories:', err)
-      throw err
-    } finally {
-      isLoading.value = false
+  actions: {
+    async loadCategories() {
+      this.loading = true
+      this.error = null
+      try {
+        this.categories = await GetAllCategories()
+      } catch (err) {
+        this.error = err.message || 'Failed to load categories'
+        console.error('Error loading categories:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async createCategory(categoryData) {
+      this.loading = true
+      this.error = null
+      try {
+        const newCategory = await CreateCategory(categoryData)
+        this.categories.push(newCategory)
+        return newCategory
+      } catch (err) {
+        this.error = err.message || 'Failed to create category'
+        console.error('Error creating category:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async updateCategory(id, categoryData) {
+      this.loading = true
+      this.error = null
+      try {
+        const updatedCategory = await UpdateCategory(id, categoryData)
+        const index = this.categories.findIndex(c => c.id === id)
+        if (index !== -1) {
+          this.categories[index] = updatedCategory
+        }
+        return updatedCategory
+      } catch (err) {
+        this.error = err.message || 'Failed to update category'
+        console.error('Error updating category:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async deleteCategory(id) {
+      this.loading = true
+      this.error = null
+      try {
+        await DeleteCategory(id)
+        this.categories = this.categories.filter(c => c.id !== id)
+      } catch (err) {
+        this.error = err.message || 'Failed to delete category'
+        console.error('Error deleting category:', err)
+        throw err
+      } finally {
+        this.loading = false
+      }
     }
-  }
-
-  async function createCategory(category) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      await CreateCategory(category.name, category.color || '#6B7280')
-      await loadCategories()
-    } catch (err) {
-      error.value = err.message || 'Kategori oluşturulamadı'
-      console.error('Failed to create category:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function updateCategory(id, category) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      await UpdateCategory(id, category.name, category.color)
-      await loadCategories()
-    } catch (err) {
-      error.value = err.message || 'Kategori güncellenemedi'
-      console.error('Failed to update category:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function deleteCategory(id) {
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      await DeleteCategory(id)
-      await loadCategories()
-    } catch (err) {
-      error.value = err.message || 'Kategori silinemedi'
-      console.error('Failed to delete category:', err)
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  function clearError() {
-    error.value = null
-  }
-
-  return {
-    categories,
-    isLoading,
-    error,
-    loadCategories,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-    clearError
   }
 })

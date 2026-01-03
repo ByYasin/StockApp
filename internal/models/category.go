@@ -6,11 +6,12 @@ import (
 
 // Category represents a product category
 type Category struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	Name      string    `gorm:"size:100;not null;index" json:"name"`
-	Color     string    `gorm:"size:7;default:#6B7280" json:"color"` // HEX color
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	Name        string    `gorm:"size:100;not null;index" json:"name"`
+	Description string    `gorm:"size:500" json:"description"`
+	Color       string    `gorm:"size:7;default:#6B7280" json:"color"` // HEX color
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 
 	// Relations
 	Products []Product `gorm:"foreignKey:CategoryID" json:"-"`
