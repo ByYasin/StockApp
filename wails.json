@@ -1,0 +1,25 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "StokTakipDesktop",
+  "outputfilename": "StockApp",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev": "npm run dev",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Stok Takip",
+    "email": "info@stoktakip.local"
+  },
+  "info": {
+    "companyName": "Stok Takip",
+    "productName": "Stok Takip Sistemi",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2024",
+    "comments": "Portable Multi-Database Stock Management System"
+  },
+  "wailsjsdir": "./frontend",
+  "assetdir": "./frontend/dist",
+  "reloaddirs": "internal,frontend/src",
+  "build:dir": "build"
+}
