@@ -98,6 +98,23 @@ func (m *Manager) GetLastDatabase() string {
 	return m.config.LastDatabase
 }
 
+// SetTheme updates the theme
+func (m *Manager) SetTheme(theme string) error {
+	if m.config == nil {
+		m.config = m.getDefaultConfig()
+	}
+	m.config.Theme = theme
+	return m.Save()
+}
+
+// GetTheme returns the current theme
+func (m *Manager) GetTheme() string {
+	if m.config == nil {
+		m.config = m.getDefaultConfig()
+	}
+	return m.config.Theme
+}
+
 // getDefaultConfig returns the default configuration
 func (m *Manager) getDefaultConfig() *Config {
 	return &Config{

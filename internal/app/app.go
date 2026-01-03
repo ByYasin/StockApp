@@ -234,3 +234,15 @@ func (a *App) GetMovementsByProduct(productID uint) ([]services.MovementDTO, err
 func (a *App) GetMovementStats() (*services.MovementStats, error) {
 	return a.movementService.GetStats()
 }
+
+// Config service methods - exported for Wails
+
+// GetTheme returns the current theme
+func (a *App) GetTheme() string {
+	return a.configManager.GetTheme()
+}
+
+// SetTheme sets the theme
+func (a *App) SetTheme(theme string) error {
+	return a.configManager.SetTheme(theme)
+}
