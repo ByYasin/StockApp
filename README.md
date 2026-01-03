@@ -1,4 +1,4 @@
-# Stok Takip Masaüstü Uygulaması (Windows, MAC ve Linux için derlenebilir.)
+# Stok Takip Masaüstü Uygulaması (Windows, MacOS ve Linux için derlenebilir.)
 
 Modern ve kullanıcı dostu bir masaüstü stok takip uygulaması. Küçük ve orta ölçekli işletmeler için tasarlanmış, internet bağlantısı gerektirmeyen yerli bir çözüm.
 
