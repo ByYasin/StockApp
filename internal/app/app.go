@@ -73,11 +73,15 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Try to connect to last used database
 	lastDB := a.configManager.GetLastDatabase()
-	if lastDB != "" && a.pathManager.FileExists(lastDB) {
-		if err := a.dbManager.Connect(lastDB); err != nil {
-			log.Printf("Warning: Failed to connect to last database: %v", err)
-		} else {
-			log.Printf("Reconnected to last database: %s", lastDB)
+	if lastDB != "" {
+		// Convert filename to full path
+		fullPath := a.pathManager.GetDatabasePath(lastDB)
+		if a.pathManager.FileExists(fullPath) {
+			if err := a.dbManager.Connect(fullPath); err != nil {
+				log.Printf("Warning: Failed to connect to last database: %v", err)
+			} else {
+				log.Printf("Reconnected to last database: %s", lastDB)
+			}
 		}
 	}
 }

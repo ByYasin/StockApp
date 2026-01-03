@@ -5,7 +5,14 @@
 </template>
 
 <script setup>
-// Root component - handles global state and routing
+import { onMounted } from 'vue'
+import { useThemeStore } from './stores/theme'
+
+const themeStore = useThemeStore()
+
+onMounted(() => {
+  themeStore.loadTheme()
+})
 </script>
 
 <style scoped>

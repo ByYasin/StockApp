@@ -117,8 +117,8 @@ func (s *DatabaseService) CreateDatabase(name string) error {
 	}
 	fmt.Printf("Database connected successfully\n")
 
-	// Step 9: Update config with new database
-	if err := s.configManager.SetLastDatabase(dbPath); err != nil {
+	// Step 9: Update config with new database (save only filename for portability)
+	if err := s.configManager.SetLastDatabase(name); err != nil {
 		return fmt.Errorf("yapılandırma kaydedilemedi: %w", err)
 	}
 	fmt.Printf("Config saved\n")
@@ -138,8 +138,9 @@ func (s *DatabaseService) SwitchDatabase(path string) error {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Update config
-	if err := s.configManager.SetLastDatabase(path); err != nil {
+	// Update config (save only filename for portability)
+	filename := filepath.Base(path)
+	if err := s.configManager.SetLastDatabase(filename); err != nil {
 		return fmt.Errorf("failed to update config: %w", err)
 	}
 
